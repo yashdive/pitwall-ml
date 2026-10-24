@@ -1,0 +1,5 @@
+storage:
+  raw_uri: data/raw
+  cache_uri: data/cache/fastf1
+  compression: zstd
+  overwrite: false

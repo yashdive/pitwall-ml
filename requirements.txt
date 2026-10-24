@@ -1,0 +1,8 @@
+fastf1
+pandas
+pyarrow
+duckdb
+pydantic
+pyyaml
+pandera
+pytest
