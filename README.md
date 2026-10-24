@@ -134,17 +134,23 @@ As the ML layer develops, the project will emphasize:
 
 ## Roadmap
 
-- [x] Prototype FastF1 ingestion
-- [x] Store lap, weather, and session metadata
-- [x] Explore lap filtering and tyre-degradation signals
-- [ ] Harden the ingestion API and add automated tests
-- [ ] Build multi-event, multi-season training datasets
-- [ ] Add validation schemas and data-quality reporting
-- [ ] Establish leakage-safe baseline models
-- [ ] Estimate stint-level tyre degradation with uncertainty
-- [ ] Add pit-loss, traffic, and safety-car context
-- [ ] Build a race-strategy simulator
-- [ ] Serve scenario analysis through an API/dashboard
+The project is built in stages, each usable and tested before the next:
+
+1. **Lap-time / degradation model** + a thin end-to-end MLOps pipeline (tracking, registry, scheduled retraining, API)
+2. **Race simulator** (pit loss, traffic, random safety cars)
+3. **Monte Carlo strategy optimiser** (pre-race and mid-race recommendations, backtested against real races)
+4. **Reinforcement learning agent** (stretch goal)
+5. **Live mode** with monitoring
+
+Detailed checklist: [`docs/ROADMAP.md`](docs/ROADMAP.md). Design decisions and their reasons: [`docs/DECISIONS.md`](docs/DECISIONS.md).
+
+## Results log
+
+Validation numbers for each stage, newest first.
+
+| Date | Stage | What was evaluated | Result |
+|---|---|---|---|
+| — | — | No models yet | — |
 
 ## Data and attribution
 
