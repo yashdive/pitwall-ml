@@ -10,5 +10,7 @@ venv/
 
 data/cache/
 data/processed/
+data/raw/
 
 .DS_Store
+logs/

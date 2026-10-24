@@ -1,41 +1,67 @@
-from pathlib import Path
-import pandas as pd
+"""Persist SessionData to the raw layer as Hive-partitioned Parquet.
 
-from MoSIC import data
+Layout (one file per table per session):
+
+    {raw_uri}/{table}/season=2024/round=10/session=R/data.parquet
+    {raw_uri}/metadata/season=2024/round=10/session=R/metadata.json
+
+The metadata file is written last and acts as the commit marker: a session
+counts as ingested only if its metadata exists, so a crash mid-write is
+retried on the next run instead of leaving a half-written session behind.
+"""
+
+import json
+import os
+from pathlib import Path
+
+from f1_intelligence.ingestion.fastf1_loader import KEY_COLUMNS, SessionData, SessionKey
+
+METADATA_TABLE = "metadata"
+
 
 class ParquetWriter:
-    def __init__(self, data: dict, raw_uri: str, compression: str = 'zstd'):
-        self.data = data
-        self.raw_uri = raw_uri
+    def __init__(self, raw_uri: str | Path, compression: str = "zstd"):
+        self.raw_uri = Path(raw_uri)
         self.compression = compression
-        
-    def write_data(self):
-        '''
-        Write the data to parquet files.
 
-        '''
-        season = self.data['metadata']['season']
-        event = self.data['metadata']['event']
-        session_type = self.data['metadata']['session_type']
+    def partition_dir(self, table: str, key: SessionKey) -> Path:
+        return self.raw_uri / table / f"season={key.season}" / f"round={key.round}" / f"session={key.session}"
 
-        output_dir = Path(self.raw_uri) 
-        laps_dir = Path(f"{output_dir}/laps/season={season}/event={event}/session_type={session_type}")
-        weather_dir = Path(f"{output_dir}/weather/season={season}/event={event}/session_type={session_type}")
-        metadata_dir = Path(f"{output_dir}/metadata/season={season}/event={event}/session_type={session_type}")
-        
-        for data_type in data.keys():
-            if data[data_type] is not None or (isinstance(data[data_type],pd.DataFrame) and len(data[data_type]) > 0):
-                if data_type == "laps":
-                    laps_dir.mkdir(parents=True, exist_ok=True)
-                    laps_df = pd.DataFrame(data[data_type])
-                    laps_df.to_parquet(f"{laps_dir}/data.parquet", index=False, compression=self.compression)
-                elif data_type == "weather":
-                    weather_dir.mkdir(parents=True, exist_ok=True)
-                    weather_df = pd.DataFrame(data[data_type])
-                    weather_df.to_parquet(f"{weather_dir}/data.parquet", index=False, compression=self.compression)
-                elif data_type == "metadata":
-                    metadata_dir.mkdir(parents=True, exist_ok=True)
-                    metadata_df = pd.DataFrame([data[data_type]])
-                    metadata_df.to_csv(f"{metadata_dir}/data.csv", index=False)
-            else:
-                raise ValueError(f"No data found for {data_type} in season {season}, event {event}, session {session_type}.")
+    def metadata_path(self, key: SessionKey) -> Path:
+        return self.partition_dir(METADATA_TABLE, key) / "metadata.json"
+
+    def exists(self, key: SessionKey) -> bool:
+        return self.metadata_path(key).exists()
+
+    def write(self, data: SessionData, overwrite: bool = False) -> bool:
+        """Write all tables of a session. Returns False if skipped because it already exists."""
+        key = data.key
+        if self.exists(key) and not overwrite:
+            return False
+
+        # Un-commit first so an interrupted overwrite is never mistaken for a complete session.
+        self.metadata_path(key).unlink(missing_ok=True)
+
+        for table, df in data.tables().items():
+            path = self.partition_dir(table, key) / "data.parquet"
+            if df.drop(columns=KEY_COLUMNS).empty:
+                # Optional table missing for this session (recorded in metadata["missing_tables"]);
+                # remove any stale file from a previous ingestion.
+                path.unlink(missing_ok=True)
+                continue
+            _atomic_write(path, lambda tmp: df.to_parquet(tmp, index=False, compression=self.compression))
+
+        metadata_json = json.dumps(data.metadata, indent=2, ensure_ascii=False, default=str)
+        _atomic_write(self.metadata_path(key), lambda tmp: tmp.write_text(metadata_json, encoding="utf-8"))
+        return True
+
+
+def _atomic_write(path: Path, write) -> None:
+    """Write to a temp file then rename: readers never see a partially written file."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(path.name + ".tmp")
+    try:
+        write(tmp)
+        os.replace(tmp, path)
+    finally:
+        tmp.unlink(missing_ok=True)
