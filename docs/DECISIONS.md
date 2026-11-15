@@ -92,3 +92,10 @@ Newest at the bottom. Status is `accepted`, `proposed`, or `superseded by D#`.
 - Model docs and results state the scope; evaluation reports dry laps only.
 **Later:** a wet model with wetness features (field pace vs the race's dry pace, share of cars on intermediates, recent rain readings, laps since rain stopped) and a crossover model (when slicks become faster than intermediates). Needs no re-ingestion or pipeline change, only new features and models (tracked as a GitHub `idea` issue).
 **Rejected:** training v1 on all compounds with `Compound` as a feature; dropping wet laps from the processed layer.
+
+### D18 — Processed data uses only the past; one code path for training and prediction
+**Status:** accepted
+**Rule:** every column in the processed table may use only the current lap and earlier laps of the same race. The same transform functions build the training data (whole past races) and, later, the live data (lap by lap).
+**Why:** in training the code can see the whole race; live it cannot. A column that peeks at later laps makes the model look good in testing and fail in real use (training/serving skew). Calculations that need a finished stint (e.g. its degradation slope) belong to building training targets in the features step, not to the processed table.
+**Checked by:** a test that adding later laps to a race does not change any column of the earlier laps.
+**Rejected:** whole-race columns such as a driver's median lap in the race.

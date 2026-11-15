@@ -20,6 +20,7 @@ dependencies = [
 
 [project.scripts]
 f1-backfill = "f1_intelligence.ingestion.backfill:main"
+f1-process = "f1_intelligence.processing.pipeline:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8"]

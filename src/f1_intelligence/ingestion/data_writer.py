@@ -11,10 +11,11 @@ retried on the next run instead of leaving a half-written session behind.
 """
 
 import json
-import os
 from pathlib import Path
 
 from f1_intelligence.ingestion.fastf1_loader import KEY_COLUMNS, SessionData, SessionKey
+from f1_intelligence.storage import atomic_write as _atomic_write
+from f1_intelligence.storage import partition_dir
 
 METADATA_TABLE = "metadata"
 
@@ -25,7 +26,7 @@ class ParquetWriter:
         self.compression = compression
 
     def partition_dir(self, table: str, key: SessionKey) -> Path:
-        return self.raw_uri / table / f"season={key.season}" / f"round={key.round}" / f"session={key.session}"
+        return partition_dir(self.raw_uri, table, key.season, key.round, key.session)
 
     def metadata_path(self, key: SessionKey) -> Path:
         return self.partition_dir(METADATA_TABLE, key) / "metadata.json"
@@ -55,13 +56,3 @@ class ParquetWriter:
         _atomic_write(self.metadata_path(key), lambda tmp: tmp.write_text(metadata_json, encoding="utf-8"))
         return True
 
-
-def _atomic_write(path: Path, write) -> None:
-    """Write to a temp file then rename: readers never see a partially written file."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    try:
-        write(tmp)
-        os.replace(tmp, path)
-    finally:
-        tmp.unlink(missing_ok=True)
