@@ -14,7 +14,7 @@ Status: ✅ done · 🔨 in progress · ⬜ not started
 - ✅ FastF1 loader: sessions identified by `(season, round, session)`, typed `SessionData`, classified errors
 - ✅ Raw writer: Hive-partitioned Parquet, atomic writes, metadata as commit marker, idempotent
 - ✅ `f1-backfill` CLI: resumable, waits out the API rate limit, exit codes for schedulers
-- ✅ Backfill 2022–2025 races (92 races, ~101k laps)
+- ✅ Backfill 2022–2025 races
 - ⬜ Exercise: add `--dry-run` to `f1-backfill` (learning catch-up)
 
 ## Stage 1 — Lap-time / degradation model + walking skeleton

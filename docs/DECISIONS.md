@@ -30,7 +30,7 @@ Newest at the bottom. Status is `accepted`, `proposed`, or `superseded by D#`.
 
 ### D6 — Ingest races only for v1
 **Status:** accepted
-**Why:** FastF1 enforces 500 API calls/hour; one session costs ~19 calls. All sessions 2022–2025 ≈ 17 h, races only ≈ 3.5 h. v1 (degradation) and v2 (pit prediction) only need races.
+**Why:** FastF1 limits API calls per hour, and every session costs many calls, so ingesting all sessions takes several times longer than races only. v1 (degradation) and v2 (pit prediction) only need races.
 **Revisit:** v3 (race winner) needs Q and probably FP2 — add to `backfill.sessions` in `configs/ingestion.yaml`.
 
 ### D7 — Python 3.14
@@ -72,3 +72,23 @@ Newest at the bottom. Status is `accepted`, `proposed`, or `superseded by D#`.
 ### D15 — Live mode starts as race replay
 **Status:** proposed
 **Why:** replaying past races lap by lap behaves like live mode for development and backtesting, and is free. Real-time sources need checking against D8 (free hosting): FastF1 can record the official live-timing feed; OpenF1 real-time access may be a paid tier.
+
+### D16 — How we judge models
+**Status:** accepted
+**What matters:** the simulator adds lap times over a whole stint, so errors in the degradation **rate** add up while per-lap noise averages out. A small rate error is multiplied by every lap of the stint and can end up larger than an undercut margin.
+**Metric:** hide the last N laps of held-out stints and predict them; train on earlier races, test on later ones. Report per-lap error (MAE) and degradation-rate error, overall and per compound and track.
+**Scale:** a model must beat the baseline ("same as the last few laps"). Below the noise floor (a line fitted through each stint's own laps) means a bug or leakage.
+**Must get right:** degradation rate per compound and track, fuel effect, pit loss.
+**Can give up for now:** per-lap precision, wet races (D17), lap 1 and restart laps, driver-specific degradation, exact traffic modelling, 2026.
+**Process:** model → error analysis (by track, compound, tyre age, temperature, season) → one change → re-evaluate in MLflow. Further EDA only answers a model error. Stop when better accuracy no longer changes pit decisions.
+
+### D17 — v1 model scope: dry tyres in dry conditions
+**Status:** accepted
+**Scope:** the Stage 1 degradation model predicts lap times on SOFT / MEDIUM / HARD in dry conditions only.
+**Why:** in wet or mixed conditions lap time is driven mainly by how wet the track is, which changes every lap and is not in our data (`Rainfall` is only yes/no and misses rain that fell before the start). Training on wet laps would (1) teach wrong patterns (e.g. intermediates "getting faster with age" while the track dries), (2) distort effects shared with dry laps (fuel, track, driver), and (3) mix dry and wet performance into one error number. Wet laps are also scarce compared with dry laps.
+**How it is applied:**
+- Processed layer keeps every lap and flags `is_wet_compound` (D10); wet laps are filtered out only when building the v1 training set (feature layer).
+- `predict_lap_time` rejects out-of-scope inputs (wet compounds) instead of returning a number.
+- Model docs and results state the scope; evaluation reports dry laps only.
+**Later:** a wet model with wetness features (field pace vs the race's dry pace, share of cars on intermediates, recent rain readings, laps since rain stopped) and a crossover model (when slicks become faster than intermediates). Needs no re-ingestion or pipeline change, only new features and models (tracked as a GitHub `idea` issue).
+**Rejected:** training v1 on all compounds with `Compound` as a feature; dropping wet laps from the processed layer.
