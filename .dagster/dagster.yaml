@@ -1,0 +1,10 @@
+# Dagster instance settings. Run with:  DAGSTER_HOME=$PWD/.dagster dagster dev
+# Run history, data versions and partitions are stored here (SQLite files next to this one).
+# In production this points at Postgres instead.
+
+concurrency:
+  pools:
+    default_limit: 1   # pool "fastf1_api": one FastF1 download at a time (rate limit)
+
+telemetry:
+  enabled: false

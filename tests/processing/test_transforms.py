@@ -12,7 +12,7 @@ from f1_intelligence.processing.transforms import (
     build_processed_laps,
     clean_weather,
 )
-from tests.processing.conftest import METADATA, RULES, one_driver, raw_lap, raw_laps, raw_weather
+from tests.conftest import METADATA, RULES, one_driver, raw_lap, raw_laps, raw_weather
 
 
 def flagged(rows):

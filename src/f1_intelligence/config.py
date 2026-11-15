@@ -24,6 +24,7 @@ class BackfillConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     sessions: list[str] | None = None  # session codes; None = all
+    seasons: list[int] = []  # seasons the scheduler keeps up to date (2026 deferred, D14)
     rate_limit_wait_minutes: float = Field(default=61, gt=0)
 
 
@@ -65,11 +66,6 @@ class ProcessingConfig(BaseModel):
     compression: str = "zstd"
     sessions: list[str] = ["R"]
     rules: ProcessingRules
-
-    @property
-    def output_uri(self) -> Path:
-        """Folder of this version, e.g. data/processed/v1."""
-        return self.processed_uri / self.version
 
 
 def load_processing_config(path: str | Path = "configs/processing.yaml") -> ProcessingConfig:

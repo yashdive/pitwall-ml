@@ -1,5 +1,7 @@
 # Processed layer (docs/design/processed_layer.md).
-# Changing any rule below means a new version: bump `version` so the old data stays as it is.
+# The real version is "<version>-<fingerprint>", e.g. v1-3f9a1c2e. The fingerprint is
+# computed from the rules below + the processing code, so changing a rule creates a new
+# version folder by itself; the old one stays untouched. `version` is only a readable label.
 version: v1
 
 raw_uri: data/raw

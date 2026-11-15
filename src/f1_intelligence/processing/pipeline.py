@@ -4,13 +4,17 @@
     f1-process --seasons 2024       # only some races
     f1-process --force              # rebuild even if up to date
 
-Output (version folder from configs/processing.yaml):
+Output, in the folder of the current version (label + fingerprint, see version.py):
 
-    data/processed/v1/laps/season=2024/round=3/session=R/data.parquet
-    data/processed/v1/metadata/season=2024/round=3/session=R/metadata.json
+    data/processed/v1-3f9a1c2e/laps/season=2024/round=3/session=R/data.parquet
+    data/processed/v1-3f9a1c2e/metadata/season=2024/round=3/session=R/metadata.json
 
-A race is rebuilt when it has no output yet or its raw data was re-ingested.
-The metadata file is written last: a race without it counts as not processed.
+A race is rebuilt when it has no output in this version yet or its raw data was
+re-ingested. A rule or code change gives a new version folder, so every race is
+built again there. The metadata file is written last: a race without it counts as
+not processed.
+
+Normally Dagster runs this (f1_intelligence.orchestration); the CLI is for manual runs.
 
 Exit codes: 0 = all fine, 1 = some races failed.
 """
@@ -29,6 +33,7 @@ from f1_intelligence.config import ProcessingConfig, load_processing_config
 from f1_intelligence.ingestion.fastf1_loader import SessionKey
 from f1_intelligence.processing.schema import PROCESSED_LAPS_SCHEMA
 from f1_intelligence.processing.transforms import build_processed_laps
+from f1_intelligence.processing.version import output_root, processed_version
 from f1_intelligence.storage import atomic_write, partition_dir
 
 log = logging.getLogger("f1_intelligence.process")
@@ -56,7 +61,7 @@ def read_raw_race(raw_uri: Path, key: SessionKey) -> tuple[pd.DataFrame, pd.Data
 
 
 def output_paths(config: ProcessingConfig, key: SessionKey) -> tuple[Path, Path]:
-    root = config.output_uri
+    root = output_root(config)
     data = partition_dir(root, "laps", key.season, key.round, key.session) / "data.parquet"
     meta = partition_dir(root, "metadata", key.season, key.round, key.session) / "metadata.json"
     return data, meta
@@ -70,12 +75,15 @@ def is_up_to_date(meta_path: Path, raw_metadata: dict) -> bool:
     return built_from == raw_metadata.get("ingested_at_utc")
 
 
-def process_race(key: SessionKey, config: ProcessingConfig, force: bool = False) -> str:
-    """Build, check and write one race. Returns "written" or "up_to_date"."""
+def process_race(key: SessionKey, config: ProcessingConfig, force: bool = False) -> dict:
+    """Build, check and write one race.
+
+    Returns the race's metadata plus "status": "written" or "up_to_date".
+    """
     laps_raw, weather_raw, raw_meta = read_raw_race(config.raw_uri, key)
     data_path, meta_path = output_paths(config, key)
     if not force and is_up_to_date(meta_path, raw_meta):
-        return "up_to_date"
+        return {"status": "up_to_date", **json.loads(meta_path.read_text(encoding="utf-8"))}
 
     laps = build_processed_laps(laps_raw, weather_raw, raw_meta, config.rules)
     PROCESSED_LAPS_SCHEMA.validate(laps)  # raises on any broken rule: nothing is written
@@ -86,7 +94,7 @@ def process_race(key: SessionKey, config: ProcessingConfig, force: bool = False)
         "season": key.season,
         "round": key.round,
         "session": key.session,
-        "processing_version": config.version,
+        "processing_version": processed_version(config),
         "rules": config.rules.model_dump(),
         "raw_ingested_at_utc": raw_meta.get("ingested_at_utc"),
         "code_commit": _code_commit(),
@@ -98,7 +106,7 @@ def process_race(key: SessionKey, config: ProcessingConfig, force: bool = False)
     }
     text = json.dumps(metadata, indent=2, ensure_ascii=False)
     atomic_write(meta_path, lambda tmp: tmp.write_text(text, encoding="utf-8"))
-    return "written"
+    return {"status": "written", **metadata}
 
 
 def _code_commit() -> str | None:
@@ -128,12 +136,12 @@ def main(argv: list[str] | None = None) -> int:
         k for k in list_raw_races(config.raw_uri, config.sessions)
         if (args.seasons is None or k.season in args.seasons) and (args.rounds is None or k.round in args.rounds)
     ]
-    log.info("%d races, writing to %s", len(keys), config.output_uri)
+    log.info("%d races, writing to %s", len(keys), output_root(config))
 
     counts, failed = Counter(), []
     for i, key in enumerate(keys, start=1):
         try:
-            result = process_race(key, config, force=args.force)
+            result = process_race(key, config, force=args.force)["status"]
             counts[result] += 1
             if result == "written":
                 log.info("[%d/%d] %s written", i, len(keys), key)

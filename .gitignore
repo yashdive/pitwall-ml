@@ -14,3 +14,7 @@ data/raw/
 
 .DS_Store
 logs/
+
+# Dagster: keep the instance settings, not the run history
+.dagster/*
+!.dagster/dagster.yaml

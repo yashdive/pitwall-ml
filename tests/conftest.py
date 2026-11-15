@@ -17,7 +17,7 @@ RULES = ProcessingRules(
 
 METADATA = {"season": 2024, "round": 3, "session": "R", "event_name": "Test Grand Prix",
             "location": "Testville", "event_format": "conventional",
-            "ingested_at_utc": "2026-01-01T00:00:00+00:00"}
+            "ingested_at_utc": "2026-01-01T00:00:00+00:00", "missing_tables": [], "fastf1_version": "test"}
 
 
 def td(seconds):

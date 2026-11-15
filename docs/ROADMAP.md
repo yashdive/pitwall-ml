@@ -34,7 +34,8 @@ Walking skeleton (thin MLOps slice, D12):
 - ⬜ MLflow tracking for every training run (params, metrics, artefacts) from the first model
 - ⬜ MLflow model registry: register the model; promote only if it beats the current one on held-out races
 - ⬜ One pipeline command: ingest new race → process → retrain → evaluate → register
-- ⬜ Scheduled run after each race weekend
+- ✅ Orchestration: Dagster assets per race, new-race sensor, automatic rebuild on data or rule/code change (D19)
+- ⬜ Scheduled run after each race weekend (sensor exists; needs the always-on server)
 - ⬜ Minimal FastAPI service serving `predict_lap_time`, in Docker
 - ⬜ CI: GitHub Actions running lint + tests
 

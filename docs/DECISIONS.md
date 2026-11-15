@@ -99,3 +99,10 @@ Newest at the bottom. Status is `accepted`, `proposed`, or `superseded by D#`.
 **Why:** in training the code can see the whole race; live it cannot. A column that peeks at later laps makes the model look good in testing and fail in real use (training/serving skew). Calculations that need a finished stint (e.g. its degradation slope) belong to building training targets in the features step, not to the processed table.
 **Checked by:** a test that adding later laps to a race does not change any column of the earlier laps.
 **Rejected:** whole-race columns such as a driver's median lap in the race.
+
+### D19 — Dagster runs the pipeline; versions come from fingerprints
+**Status:** accepted
+**What:** the pipeline stages are Dagster assets, one partition per race. Dagster finds new races (sensor), records every build with its code version, data version and inputs (lineage), marks data as stale when its inputs or code change, and rebuilds it automatically. The processed version is `<label>-<fingerprint>` (hash of rules + processing code), each in its own folder, so a rule change creates a new version by itself and old versions are never overwritten. MLflow will record which data each model used.
+**Why:** this is meant to become a live system. A human remembering to bump versions, or to rerun upstream stages, is the kind of step that silently goes wrong. Dagster is built around data assets, lineage, staleness and partitions; it runs on SQLite locally and Postgres in production (free, D8).
+**Rejected:** home-built fingerprint + SQLite catalog (more code to maintain, no scheduling or UI); DVC (strong for data versioning and remote storage, but not a scheduler; may still be added for remote storage at hosting time); Airflow (task-based, not asset-based); Prefect (weaker built-in staleness and lineage).
+**Details:** `docs/design/orchestration.md`.
