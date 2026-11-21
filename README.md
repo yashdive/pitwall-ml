@@ -8,8 +8,6 @@ It learns from past races how fast tyres wear out, simulates a race lap by lap, 
 past race data ──→ how tyres wear out ──→ race simulation ──→ best pit strategy
 ```
 
-It runs by itself: when a new race finishes, it downloads the data, cleans it, and keeps everything up to date.
-
 ---
 
 Race data comes from [FastF1](https://github.com/theOehrly/Fast-F1). This is an independent project, not connected to Formula 1 or the FIA.
