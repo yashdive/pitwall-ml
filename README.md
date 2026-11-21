@@ -62,65 +62,44 @@ Planned development is organized around four stages:
 
 ## Repository structure
 
+Every folder has its own `README.md` that explains its files. Start with `docs/ARCHITECTURE.md` for the big picture.
+
 ```text
 F1/
-├── configs/
-│   └── ingestion.yaml          # Storage and ingestion settings
-├── data/raw/                   # Example session data and local raw datasets
-├── research/
-│   ├── data_ingestion.ipynb    # Ingestion experiments
-│   └── FastAPI_testing.ipynb   # Pace and tyre-degradation exploration
+├── configs/            # settings (YAML): ingestion and processing rules
+├── data/               # raw and processed data (not in git; rebuildable)
+├── docs/               # architecture, decisions, roadmap, design notes
+├── research/           # exploration notebooks and findings
+├── scripts/            # one-off helpers (GitHub tracker setup)
 ├── src/f1_intelligence/
-│   └── ingestion/
-│       ├── fastf1_loader.py    # FastF1 session and dataset loader
-│       └── data_writer.py      # Parquet/metadata persistence
-└── requirements.txt
+│   ├── ingestion/      # FastF1 → data/raw
+│   ├── processing/     # data/raw → data/processed/<version>
+│   └── orchestration/  # Dagster: runs it all, per race
+├── tests/              # automatic checks, one folder per part of the code
+├── .dagster/           # Dagster's settings and history
+└── logs/               # output of long manual runs
 ```
 
 ## Getting started
 
-### 1. Create an environment
-
-Python 3.10 or newer is recommended.
-
 ```bash
-git clone <repository-url>
-cd F1
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+# 1. Install (Python 3.12+; we use 3.14)
+pip install -e .
+
+# 2. Download races (FastF1 allows ~26 races per hour; this resumes if stopped)
+f1-backfill --seasons 2022 2023 2024 2025 --wait-on-rate-limit
+
+# 3. Build the processed lap table
+f1-process
+
+# 4. Or let Dagster run and watch everything (UI at http://localhost:3000)
+DAGSTER_HOME=$PWD/.dagster dagster dev
+
+# 5. Run the tests
+pytest -q
 ```
 
-### 2. Load a session
-
-Run Python from the project root with `src` on the module path:
-
-```bash
-export PYTHONPATH="$PWD/src"
-```
-
-```python
-from f1_intelligence.ingestion.fastf1_loader import FastF1Loader
-
-loader = FastF1Loader(
-    season=2024,
-    event="Spain",
-    session_type="R",
-    datasets=["laps", "weather"],
-)
-
-session = loader.load_session()
-data = loader.load_datasets(session)
-
-print(data["metadata"])
-print(data["laps"].head())
-```
-
-FastF1 downloads timing data on first use, so the initial run may take a few minutes.
-
-### 3. Explore the research
-
-Open the notebooks in `research/` to follow the ingestion experiments and the first analysis of clean race laps, tyre-life effects, stint slopes, compound differences, and track temperature.
+Explore the data in `research/02_raw_race_eda.ipynb` (column guide and findings at the top).
 
 ## Modelling principles
 

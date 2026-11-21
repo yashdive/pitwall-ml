@@ -13,8 +13,13 @@ data/processed/
 data/raw/
 
 .DS_Store
-logs/
+logs/*
+!logs/README.md
 
 # Dagster: keep the instance settings, not the run history
 .dagster/*
 !.dagster/dagster.yaml
+!.dagster/README.md
+
+# Personal journal (kept locally, not shared)
+JOURNAL.md
