@@ -21,9 +21,9 @@ Status: ✅ done · 🔨 in progress · ⬜ not started
 **Output:** `predict_lap_time(state) -> seconds`, callable by the simulator.
 
 Data and model:
-- 🔨 EDA of raw race laps → processed-layer spec (`research/02_raw_race_eda.ipynb`)
-- ⬜ Processed layer: types, flags (pit in/out, lap 1, SC/VSC/red/yellow, traffic, wet, deleted), weather join; flags kept, not dropped
-- ⬜ Data contract (pandera schema) + processed writer with lineage; `f1-process` CLI
+- ✅ EDA of raw race laps → processed-layer spec (`research/02_raw_race_eda.ipynb`)
+- ✅ Processed layer: types, flags (pit in/out, lap 1, SC/VSC/red/yellow, traffic, wet, deleted), weather join; flags kept, not dropped
+- ✅ Data contract (pandera schema) + processed writer with lineage; `f1-process` CLI
 - ⬜ Fuel correction (per-lap fuel effect; estimated or a config parameter)
 - ⬜ Base model: parametric degradation curve per stint (linear, then quadratic in tyre age) on fuel-corrected times; must extrapolate sensibly
 - ⬜ Conditions model: gradient boosting (LightGBM) predicting curve parameters or residuals from track, compound, temperature
@@ -34,7 +34,8 @@ Walking skeleton (thin MLOps slice, D12):
 - ⬜ MLflow tracking for every training run (params, metrics, artefacts) from the first model
 - ⬜ MLflow model registry: register the model; promote only if it beats the current one on held-out races
 - ⬜ One pipeline command: ingest new race → process → retrain → evaluate → register
-- ⬜ Scheduled run after each race weekend
+- ✅ Orchestration: Dagster assets per race, new-race sensor, automatic rebuild on data or rule/code change (D19)
+- ⬜ Scheduled run after each race weekend (sensor exists; needs the always-on server)
 - ⬜ Minimal FastAPI service serving `predict_lap_time`, in Docker
 - ⬜ CI: GitHub Actions running lint + tests
 

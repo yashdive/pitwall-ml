@@ -1,0 +1,17 @@
+# Processed layer (docs/design/processed_layer.md).
+# The real version is "<version>-<fingerprint>", e.g. v1-3f9a1c2e. The fingerprint is
+# computed from the rules below + the processing code, so changing a rule creates a new
+# version folder by itself; the old one stays untouched. `version` is only a readable label.
+version: v1
+
+raw_uri: data/raw
+processed_uri: data/processed
+compression: zstd
+sessions: [R]
+
+rules:
+  traffic_gap_s: 1.0              # in_traffic = gap to the car ahead below this
+  restart_laps_after_sc_vsc: 3    # laps after a safety car / VSC that count as restart laps
+  restart_laps_after_red_flag: 4  # laps after a red flag that count as restart laps
+  max_track_temp_jump_c: 5.0      # bigger jump between weather readings = sensor error
+  weather_before_start_s: 300     # use weather readings from this many seconds before the first lap
