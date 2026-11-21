@@ -149,8 +149,18 @@ def new_races_sensor(context: dg.SensorEvaluationContext, project: ProjectConfig
     )
 
 
+# Checks every asset's automation condition (e.g. "rebuild when the code version
+# changes") about every 30 s and starts the runs. Dagster ships it switched off;
+# automation must not depend on someone flipping a switch in the UI.
+automation_sensor = dg.AutomationConditionSensorDefinition(
+    "default_automation_condition_sensor",
+    target=dg.AssetSelection.all(),
+    default_status=dg.DefaultSensorStatus.RUNNING,
+)
+
+
 defs = dg.Definitions(
     assets=[raw_race, processed_laps],
-    sensors=[new_races_sensor],
+    sensors=[new_races_sensor, automation_sensor],
     resources={"project": ProjectConfig()},
 )

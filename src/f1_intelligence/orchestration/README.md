@@ -11,7 +11,7 @@ raw_race ──→ processed_laps ──→ (next: features → model)
 
 | File | What it does |
 |---|---|
-| `definitions.py` | Everything Dagster needs: **`raw_race`** (asset: the raw data of one race; downloads only if not stored yet; its *data version* is the download time), **`processed_laps`** (asset: the clean lap table of one race; its *code version* is the processed version `v1-<fingerprint>`; rebuilds by itself when its raw race is re-downloaded or the rules/code change), **`new_races_sensor`** (every hour: adds any newly finished race of the configured seasons and starts its download), **`ProjectConfig`** (tells the assets where the config files are; tests point it at temporary folders) |
+| `definitions.py` | Everything Dagster needs: **`raw_race`** (asset: the raw data of one race; downloads only if not stored yet; its *data version* is the download time), **`processed_laps`** (asset: the clean lap table of one race; its *code version* is the processed version `v1-<fingerprint>`; rebuilds by itself when its raw race is re-downloaded or the rules/code change), **`new_races_sensor`** (every hour: adds any newly finished race of the configured seasons and starts its download), **`automation_sensor`** (every ~30 s: checks each asset's automatic-rebuild rule and starts the runs; switched on from the code, because Dagster ships it switched off), **`ProjectConfig`** (tells the assets where the config files are; tests point it at temporary folders) |
 | `__init__.py` | Marks the folder as a Python package (empty) |
 
 ## How to run
