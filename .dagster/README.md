@@ -8,7 +8,7 @@ Only `dagster.yaml` and this README are in git; the history is local.
 
 | Item | What it is |
 |---|---|
-| `dagster.yaml` | Settings of this Dagster instance: at most **one** FastF1 download at a time (pool limit 1) and telemetry off |
+| `dagster.yaml` | Settings of this Dagster instance: at most **one** FastF1 download at a time (pool limit 1), at most **4 runs** at the same time, telemetry off |
 | `storage/`, `history/`, `schedules/`, `logs/` | Dagster's own databases (SQLite files) and logs. Created when Dagster runs |
 
 ## Good to know

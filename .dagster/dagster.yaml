@@ -4,7 +4,9 @@
 
 concurrency:
   pools:
-    default_limit: 1   # pool "fastf1_api": one FastF1 download at a time (rate limit)
+    default_limit: 1          # pool "fastf1_api": one FastF1 download at a time (rate limit)
+  runs:
+    max_concurrent_runs: 4    # e.g. after a rule change, 92 races rebuild 4 at a time (shared machine)
 
 telemetry:
   enabled: false
