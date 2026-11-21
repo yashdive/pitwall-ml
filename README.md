@@ -1,140 +1,15 @@
 # F1 Intelligence
 
-**Building a machine-learning foundation for understanding Formula 1 pace, tyre degradation, and race strategy.**
+A system that helps decide **when a Formula 1 car should pit and which tyres to fit**.
 
-F1 Intelligence is an early-stage data and ML project that turns Formula 1 session data into analysis-ready datasets. The project currently retrieves lap and weather data through [FastF1](https://github.com/theOehrly/Fast-F1), explores the factors that shape lap time, and establishes the data layer for future predictive models.
-
-The long-term goal is to move from describing a race to answering useful questions about it:
-
-- How quickly is each tyre compound degrading?
-- How much pace does a driver have after accounting for tyre age and track conditions?
-- When is the best pit window—and how does traffic change it?
-- What is the likely outcome of an alternative race strategy?
-
-> This repository is under active development. It contains the ingestion foundation and initial exploratory work; production ML models and strategy simulation are the next milestones.
-
-## Why this project?
-
-Raw timing data shows *what* happened. F1 Intelligence aims to estimate *why* it happened and *what could happen next*.
-
-Race pace is affected by interacting variables such as tyre compound and age, fuel burn, track evolution, temperature, traffic, safety cars, and driver or car performance. This project is being built as a reproducible pipeline that can separate those effects and eventually support data-driven race predictions.
-
-## Current progress
-
-- FastF1-based session loading by season, Grand Prix, and session type
-- Selective ingestion of lap and weather datasets
-- Local, columnar storage using Parquet with Zstandard compression
-- Session metadata capture for traceability
-- Exploratory lap-quality filtering to remove pit laps, deleted laps, and abnormal track states
-- Investigation of tyre age, stint-level degradation, compound performance, track temperature, and previous-lap pace
-- Initial feature design for lap-time modelling
-
-The included research uses the 2024 Spanish Grand Prix as an initial case study.
-
-## Where it is going
+It learns from past races how fast tyres wear out, simulates a race lap by lap, and recommends the best pit strategy, before a race and, later, live during it.
 
 ```text
-FastF1 timing data
-        │
-        ▼
-Validated session datasets
-        │
-        ▼
-Race-context feature engineering
-        │
-        ├──► Lap-time prediction
-        ├──► Tyre-degradation estimation
-        └──► Driver and team pace comparison
-                     │
-                     ▼
-             Strategy simulation
-                     │
-                     ▼
-        Explainable race intelligence
+past race data ──→ how tyres wear out ──→ race simulation ──→ best pit strategy
 ```
 
-Planned development is organized around four stages:
+It runs by itself: when a new race finishes, it downloads the data, cleans it, and keeps everything up to date.
 
-1. **Data foundation** — reliable ingestion, validation, storage, and multi-race datasets.
-2. **Pace modelling** — predict representative lap time from tyre, stint, weather, driver, team, and race-context features.
-3. **Strategy modelling** — model pit-stop loss, traffic, compound choices, and alternative pit windows.
-4. **Decision layer** — expose predictions and scenario comparisons through an API or interactive application.
+---
 
-## Repository structure
-
-Every folder has its own `README.md` that explains its files. Start with `docs/ARCHITECTURE.md` for the big picture.
-
-```text
-F1/
-├── configs/            # settings (YAML): ingestion and processing rules
-├── data/               # raw and processed data (not in git; rebuildable)
-├── docs/               # architecture, decisions, roadmap, design notes
-├── research/           # exploration notebooks and findings
-├── scripts/            # one-off helpers (GitHub tracker setup)
-├── src/f1_intelligence/
-│   ├── ingestion/      # FastF1 → data/raw
-│   ├── processing/     # data/raw → data/processed/<version>
-│   └── orchestration/  # Dagster: runs it all, per race
-├── tests/              # automatic checks, one folder per part of the code
-├── .dagster/           # Dagster's settings and history
-└── logs/               # output of long manual runs
-```
-
-## Getting started
-
-```bash
-# 1. Install (Python 3.12+; we use 3.14)
-pip install -e .
-
-# 2. Download races (FastF1 allows ~26 races per hour; this resumes if stopped)
-f1-backfill --seasons 2022 2023 2024 2025 --wait-on-rate-limit
-
-# 3. Build the processed lap table
-f1-process
-
-# 4. Or let Dagster run and watch everything (UI at http://localhost:3000)
-DAGSTER_HOME=$PWD/.dagster dagster dev
-
-# 5. Run the tests
-pytest -q
-```
-
-Explore the data in `research/02_raw_race_eda.ipynb` (column guide and findings at the top).
-
-## Modelling principles
-
-As the ML layer develops, the project will emphasize:
-
-- **No future information:** features must be available at the moment a prediction is made.
-- **Time-aware evaluation:** train and test splits should follow race chronology rather than randomly mixing laps.
-- **Race-context controls:** pit laps, safety-car periods, traffic, and invalid laps must not distort clean-air pace.
-- **Uncertainty over false precision:** strategy outputs should communicate a range of plausible outcomes.
-- **Explainability:** predictions should connect back to understandable racing factors.
-
-## Roadmap
-
-The project is built in stages, each usable and tested before the next:
-
-1. **Lap-time / degradation model** + a thin end-to-end MLOps pipeline (tracking, registry, scheduled retraining, API)
-2. **Race simulator** (pit loss, traffic, random safety cars)
-3. **Monte Carlo strategy optimiser** (pre-race and mid-race recommendations, backtested against real races)
-4. **Reinforcement learning agent** (stretch goal)
-5. **Live mode** with monitoring
-
-Detailed checklist: [`docs/ROADMAP.md`](docs/ROADMAP.md). Design decisions and their reasons: [`docs/DECISIONS.md`](docs/DECISIONS.md).
-
-## Results log
-
-Validation numbers for each stage, newest first.
-
-| Date | Stage | What was evaluated | Result |
-|---|---|---|---|
-| — | — | No models yet | — |
-
-## Data and attribution
-
-Timing data is accessed through the community-maintained [FastF1](https://github.com/theOehrly/Fast-F1) Python package. Formula 1, F1, and related marks are trademarks of Formula One Licensing B.V. This is an independent educational project and is not associated with Formula 1, the FIA, or any Formula 1 team.
-
-## Contributing
-
-Ideas, issues, and pull requests are welcome—especially around feature engineering, time-aware validation, tyre modelling, and strategy simulation.
+Race data comes from [FastF1](https://github.com/theOehrly/Fast-F1). This is an independent project, not connected to Formula 1 or the FIA.
