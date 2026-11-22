@@ -23,3 +23,7 @@ logs/*
 
 # Personal journal (kept locally, not shared)
 JOURNAL.md
+
+# Claude Code setup: kept locally, not shared on GitHub
+CLAUDE.md
+.claude/
